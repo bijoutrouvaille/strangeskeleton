@@ -1,0 +1,47 @@
+# comment
+IPA/*
+Library/*
+Temp/*
+.DS_Store
+/test-results
+/UnitTestResults.xml
+/data/node_modules/*
+
+*.app
+/Assembly*
+/ProjectSettings/*
+/*.sln
+/*.userprefs
+
+Assets/Models/Materials/unnamed.mat
+Assets/Models/Materials/unnamed.mat.meta
+
+*.blend1
+*.blend2
+*.blend3
+*.blend4
+*.blend1.meta
+*.blend2.meta
+*.blend3.meta
+*.blend4.meta
+
+Assets/test-results/
+Assets/test-results.meta
+
+# this is a temporary folder to drop sprites into for the ngui packer. Once ngui has them, they are safe to delete
+/Assets/UI/sprites
+/Assets/UI/sprites.meta
+
+# glyph files so far are not in git, perhaps they need to be
+/Assets/UI/fonts/
+/Assets/UI/fonts.meta
+
+*.sublime-workspace
+xiki.xiki
+.tags
+
+# vim swap files
+*.swp
+
+# deploy tmp files
+#

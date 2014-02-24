@@ -64,7 +64,7 @@ namespace strange.extensions.context.impl
 		{
 			IBinding binding;
 			binding = GetRawBinding ();
-			binding.Key(key);
+			binding.Bind(key);
 			resolver (binding);
 			return binding;
 		}
@@ -84,7 +84,6 @@ namespace strange.extensions.context.impl
 				eventsInProgress.Add (key);
 				crossContextDispatcher.Dispatch (key, data);
 				eventsInProgress.Remove (key);
-				return false;
 			}
 			return true;
 		}

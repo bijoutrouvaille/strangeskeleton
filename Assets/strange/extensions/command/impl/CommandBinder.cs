@@ -56,15 +56,19 @@ using System.Collections.Generic;
 using strange.extensions.command.api;
 using strange.extensions.dispatcher.api;
 using strange.extensions.injector.api;
+using strange.extensions.pool.impl;
 using strange.framework.api;
 using strange.framework.impl;
+using strange.extensions.pool.api;
 
 namespace strange.extensions.command.impl
 {
-	public class CommandBinder : Binder, ICommandBinder, ITriggerable
+	public class CommandBinder : Binder, ICommandBinder, IPooledCommandBinder, ITriggerable
 	{
 		[Inject]
-		public IInjectionBinder injectionBinder{ get; set;}
+		public IInjectionBinder injectionBinder { get; set; }
+
+		protected Dictionary<Type, Pool> pools = new Dictionary<Type, Pool> ();
 
 		/// Tracker for parallel commands in progress
 		protected HashSet<ICommand> activeCommands = new HashSet<ICommand>();
@@ -74,6 +78,7 @@ namespace strange.extensions.command.impl
 
 		public CommandBinder ()
 		{
+			usePooling = true;
 		}
 
 		public override IBinding GetRawBinding ()
@@ -88,6 +93,10 @@ namespace strange.extensions.command.impl
 		
 		virtual public void ReactTo(object trigger, object data)
 		{
+			if (data is IPoolable)
+			{
+				(data as IPoolable).Retain ();
+			}
 			ICommandBinding binding = GetBinding (trigger) as ICommandBinding;
 			if (binding != null)
 			{
@@ -107,7 +116,7 @@ namespace strange.extensions.command.impl
 			}
 		}
 
-		private void next(ICommandBinding binding, object data, int depth)
+		protected void next(ICommandBinding binding, object data, int depth)
 		{
 			object[] values = binding.value as object[];
 			if (depth < values.Length)
@@ -118,11 +127,18 @@ namespace strange.extensions.command.impl
 			}
 			else
 			{
+				disposeOfSequencedData (data);
 				if (binding.isOneOff)
 				{
 					Unbind (binding);
 				}
 			}
+		}
+
+		//EventCommandBinder (and perhaps other sub-classes) use this method to dispose of the data in sequenced commands
+		virtual protected void disposeOfSequencedData(object data)
+		{
+			//No-op. Override if necessary.
 		}
 
 		virtual protected ICommand invokeCommand(Type cmd, ICommandBinding binding, object data, int depth)
@@ -136,8 +152,7 @@ namespace strange.extensions.command.impl
 
 		virtual protected ICommand createCommand(object cmd, object data)
 		{
-			injectionBinder.Bind<ICommand> ().To (cmd);
-			ICommand command = injectionBinder.GetInstance<ICommand> () as ICommand;
+			ICommand command = getCommand (cmd as Type);
 
 			if (command == null)
 			{
@@ -151,15 +166,36 @@ namespace strange.extensions.command.impl
 			}
 
 			command.data = data;
-			injectionBinder.Unbind<ICommand> ();
 			return command;
+		}
+
+		protected ICommand getCommand(Type type)
+		{
+			if (usePooling && pools.ContainsKey(type))
+			{
+				Pool pool = pools [type];
+				ICommand command = pool.GetInstance () as ICommand;
+				if (command.IsClean)
+				{
+					injectionBinder.injector.Inject (command);
+					command.IsClean = false;
+				}
+				return command;
+			}
+			else
+			{
+				injectionBinder.Bind<ICommand> ().To (type);
+				ICommand command = injectionBinder.GetInstance<ICommand> ();
+				injectionBinder.Unbind<ICommand> ();
+				return command;
+			}
 		}
 
 		protected void trackCommand (ICommand command, ICommandBinding binding)
 		{
 			if (binding.isSequence)
 			{
-				activeSequences [command] = binding;
+				activeSequences.Add(command, binding);
 			}
 			else
 			{
@@ -202,10 +238,15 @@ namespace strange.extensions.command.impl
 			}
 		}
 
-		public void ReleaseCommand (ICommand command)
+		public virtual void ReleaseCommand (ICommand command)
 		{
 			if (command.retain == false)
 			{
+				Type t = command.GetType ();
+				if (usePooling && pools.ContainsKey (t))
+				{
+					pools [t].ReturnInstance (command);
+				}
 				if (activeCommands.Contains(command))
 				{
 					activeCommands.Remove (command);
@@ -218,6 +259,16 @@ namespace strange.extensions.command.impl
 					next (binding, data, command.sequenceId + 1);
 				}
 			}
+		}
+
+		public bool usePooling { get; set; }
+
+		public Pool<T> GetPool<T>()
+		{
+			Type t = typeof (T);
+			if (pools.ContainsKey(t as Type))
+				return pools[t] as Pool<T>;
+			return null;
 		}
 
 		private void removeSequence(ICommand command)
@@ -248,6 +299,42 @@ namespace strange.extensions.command.impl
 		new public virtual ICommandBinding Bind (object value)
 		{
 			return base.Bind (value) as ICommandBinding;
+		}
+
+		override protected void resolver(IBinding binding)
+		{
+			base.resolver (binding);
+			if (usePooling && (binding as ICommandBinding).isPooled)
+			{
+				if (binding.value != null)
+				{
+					object[] values = binding.value as object[];
+					foreach (Type value in values)
+					{
+						if (pools.ContainsKey (value) == false)
+						{
+							var myPool = makePoolFromType (value);
+							pools [value] = myPool;
+						}
+					}
+				}
+			}
+		}
+
+		virtual protected Pool makePoolFromType(Type type)
+		{
+			Type poolType = typeof(Pool<>).MakeGenericType(type);
+
+			injectionBinder.Bind (type).To (type);
+			injectionBinder.Bind<Pool>().To(poolType).ToName (CommandKeys.COMMAND_POOL);
+			Pool pool = injectionBinder.GetInstance<Pool> (CommandKeys.COMMAND_POOL) as Pool;
+			injectionBinder.Unbind<Pool> (CommandKeys.COMMAND_POOL);
+			return pool;
+		}
+
+		new public virtual ICommandBinding GetBinding<T>()
+		{
+			return base.GetBinding<T>() as ICommandBinding;
 		}
 	}
 }

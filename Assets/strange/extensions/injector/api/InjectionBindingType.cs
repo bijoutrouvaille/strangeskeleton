@@ -27,7 +27,7 @@ namespace strange.extensions.injector.api
 		SINGLETON,
 
 		/// The binding always provides the same instance based on a provided value
-		VALUE
+		VALUE,
 	}
 }
 

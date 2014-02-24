@@ -46,6 +46,9 @@
  * you to use use a PostConstructor in much the same way as a Constructor,
  * safe in the knowledge that there will be no null pointers on injected
  * dependencies. PostConstructors do not accept arguments.
+ *
+ * You may optionally include a priority int on your PostConstructor. This allows for multiple
+ * PostConstruction methods which will fire in a predictable order.
  * 
  * @class Deconstruct
  * 
@@ -55,8 +58,8 @@
 using System;
 
 [AttributeUsage(AttributeTargets.Property, 
-                AllowMultiple = false,
-                Inherited = true)]
+		AllowMultiple = false,
+		Inherited = true)]
 public class Inject: Attribute
 {
 	public Inject(){}
@@ -71,8 +74,8 @@ public class Inject: Attribute
 
 //Tag [PostConstruct] to perform post-injection construction actions
 [AttributeUsage(AttributeTargets.Constructor, 
-                AllowMultiple = false,
-                Inherited = true)]
+		AllowMultiple = false,
+		Inherited = true)]
 public class Construct: Attribute
 {
 	public Construct(){}
@@ -80,16 +83,23 @@ public class Construct: Attribute
 
 //Tag [PostConstruct] to perform post-injection construction actions
 [AttributeUsage(AttributeTargets.Method, 
-                AllowMultiple = false,
-                Inherited = true)]
+		AllowMultiple = false,
+		Inherited = true)]
 public class PostConstruct: Attribute
 {
 	public PostConstruct(){}
+
+	public PostConstruct(int p)
+	{
+		priority = p;
+	}
+
+	public int priority{get; set;}
 }
 
 [AttributeUsage(AttributeTargets.Method, 
-                AllowMultiple = false,
-                Inherited = true)]
+		AllowMultiple = false,
+		Inherited = true)]
 public class Deconstruct: Attribute
 {
 	public Deconstruct(){}

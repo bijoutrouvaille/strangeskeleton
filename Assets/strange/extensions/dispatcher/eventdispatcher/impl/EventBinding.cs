@@ -51,7 +51,7 @@ namespace strange.extensions.dispatcher.eventdispatcher.impl
 			callbackTypes = new Dictionary<Delegate, EventCallbackType> ();
 		}
 
-		public EventCallbackType typeForCallback(EmptyCallback callback)
+		public EventCallbackType TypeForCallback(EmptyCallback callback)
 		{ 
 			if (callbackTypes.ContainsKey (callback)) 
 			{
@@ -60,7 +60,7 @@ namespace strange.extensions.dispatcher.eventdispatcher.impl
 			return EventCallbackType.NOT_FOUND;
 		}
 
-		public EventCallbackType typeForCallback(EventCallback callback)
+		public EventCallbackType TypeForCallback(EventCallback callback)
 		{ 
 			if (callbackTypes.ContainsKey (callback)) 
 			{
@@ -69,9 +69,9 @@ namespace strange.extensions.dispatcher.eventdispatcher.impl
 			return EventCallbackType.NOT_FOUND;
 		}
 
-		new public IEventBinding Key(object key)
+		new public IEventBinding Bind(object key)
 		{
-			return base.Key (key) as IEventBinding;
+			return base.Bind (key) as IEventBinding;
 		}
 
 		public IEventBinding To(EventCallback value)

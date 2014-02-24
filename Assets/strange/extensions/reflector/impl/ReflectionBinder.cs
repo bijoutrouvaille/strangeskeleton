@@ -29,6 +29,7 @@ using System.Reflection;
 using strange.extensions.reflector.api;
 using strange.framework.api;
 using strange.framework.impl;
+using System.Collections;
 
 namespace strange.extensions.reflector.impl
 {
@@ -54,14 +55,14 @@ namespace strange.extensions.reflector.impl
 				mapPreferredConstructor (reflected, binding, type);
 				mapPostConstructors (reflected, binding, type);
 				mapSetters (reflected, binding, type);
-				binding.Key (type).To (reflected);
+				binding.Bind (type).To (reflected);
 				retv = binding.value as IReflectedClass;
-				retv.preGenerated = false;
+				retv.PreGenerated = false;
 			}
 			else
 			{
 				retv = binding.value as IReflectedClass;
-				retv.preGenerated = true;
+				retv.PreGenerated = true;
 			}
 			return retv;
 		}
@@ -91,8 +92,8 @@ namespace strange.extensions.reflector.impl
 				paramList [i] = paramType;
 				i++;
 			}
-			reflected.constructor = constructor;
-			reflected.constructorParameters = paramList;
+			reflected.Constructor = constructor;
+			reflected.ConstructorParameters = paramList;
 		}
 
 		//Look for a constructor in the order:
@@ -131,23 +132,22 @@ namespace strange.extensions.reflector.impl
 
 		private void mapPostConstructors(IReflectedClass reflected, IBinding binding, Type type)
 		{
-			MethodInfo[] postConstructors = new MethodInfo[0];
 			MethodInfo[] methods = type.GetMethods(BindingFlags.FlattenHierarchy | 
 			                                             BindingFlags.Public | 
 			                                             BindingFlags.Instance |
 			                                             BindingFlags.InvokeMethod);
+			ArrayList methodList = new ArrayList ();
 			foreach (MethodInfo method in methods)
 			{
-				object[] tagged = method.GetCustomAttributes(typeof(PostConstruct), true);
+				object[] tagged = method.GetCustomAttributes (typeof(PostConstruct), true);
 				if (tagged.Length > 0)
 				{
-					MethodInfo[] tempList = postConstructors;
-					int len = tempList.Length;
-					postConstructors = new MethodInfo[len + 1];
-					tempList.CopyTo (postConstructors, 0);
-					postConstructors [len] = method;
+					methodList.Add (method);
 				}
 			}
+
+			methodList.Sort (new PriorityComparer ());
+			MethodInfo[] postConstructors = (MethodInfo[])methodList.ToArray (typeof(MethodInfo));
 			reflected.postConstructors = postConstructors;
 		}
 
@@ -155,6 +155,21 @@ namespace strange.extensions.reflector.impl
 		{
 			KeyValuePair<Type, PropertyInfo>[] pairs = new KeyValuePair<Type, PropertyInfo>[0];
 			object[] names = new object[0];
+
+			MemberInfo[] privateMembers = type.FindMembers(MemberTypes.Property,
+			                                        BindingFlags.FlattenHierarchy | 
+			                                        BindingFlags.SetProperty | 
+			                                        BindingFlags.NonPublic | 
+			                                        BindingFlags.Instance, 
+			                                        null, null);
+			foreach (MemberInfo member in privateMembers)
+			{
+				object[] injections = member.GetCustomAttributes(typeof(Inject), true);
+				if (injections.Length > 0)
+				{
+					throw new ReflectionException ("The class " + type.Name + " has a non-public Injection setter " + member.Name + ". Make the setter public to allow injection.", ReflectionExceptionType.CANNOT_INJECT_INTO_NONPUBLIC_SETTER);
+				}
+			}
 
 			MemberInfo[] members = type.FindMembers(MemberTypes.Property,
 			                                              BindingFlags.FlattenHierarchy | 
@@ -178,8 +193,8 @@ namespace strange.extensions.reflector.impl
 					names = Add (bindingName, names);
 				}
 			}
-			reflected.setters = pairs;
-			reflected.setterNames = names;
+			reflected.Setters = pairs;
+			reflected.SetterNames = names;
 		}
 
 		/**
@@ -206,6 +221,25 @@ namespace strange.extensions.reflector.impl
 			tempList.CopyTo (list, 0);
 			list [len] = value;
 			return list;
+		}
+	}
+
+	class PriorityComparer : IComparer
+	{
+		int IComparer.Compare( Object x, Object y )
+		{
+
+			int pX = getPriority (x as MethodInfo);
+			int pY = getPriority (y as MethodInfo);
+
+			return (pX < pY) ? -1 : 1;
+		}
+
+		private int getPriority(MethodInfo methodInfo)
+		{
+			PostConstruct attr = methodInfo.GetCustomAttributes(true) [0] as PostConstruct;
+			int priority = attr.priority;
+			return priority;
 		}
 	}
 }

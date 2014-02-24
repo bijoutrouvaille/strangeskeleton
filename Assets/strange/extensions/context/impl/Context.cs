@@ -46,8 +46,8 @@ namespace strange.extensions.context.impl
 		public Context ()
 		{
 		}
-		
-		public Context (object view, bool autoStartup)
+
+		public Context (object view, ContextStartupFlags flags)
 		{
 			//If firstContext was unloaded, the contextView will be null. Assign the new context as firstContext.
 			if (firstContext == null || firstContext.GetContextView() == null)
@@ -58,9 +58,19 @@ namespace strange.extensions.context.impl
 			{
 				firstContext.AddContext(this);
 			}
-			this.autoStartup = autoStartup;
 			SetContextView(view);
 			addCoreComponents();
+			this.autoStartup = (flags & ContextStartupFlags.MANUAL_LAUNCH) != ContextStartupFlags.MANUAL_LAUNCH;
+			if ((flags & ContextStartupFlags.MANUAL_MAPPING) != ContextStartupFlags.MANUAL_MAPPING)
+			{
+				Start();
+			}
+		}
+
+		public Context (object view) : this (view, ContextStartupFlags.AUTOMATIC){}
+		
+		public Context (object view, bool autoMapping) : this(view, (autoMapping) ? ContextStartupFlags.MANUAL_MAPPING : ContextStartupFlags.MANUAL_LAUNCH | ContextStartupFlags.MANUAL_MAPPING)
+		{
 		}
 		
 		/// Override to add componentry. Or just extend MVCSContext.
@@ -122,8 +132,16 @@ namespace strange.extensions.context.impl
 		/// Remove a context from this one.
 		virtual public IContext RemoveContext(IContext context)
 		{
-			context.OnRemove();
-			return this;
+            //If we're removing firstContext, set firstContext to null
+		    if (context == firstContext)
+		    {
+		    	firstContext = null;
+		    }
+		    else
+		    {
+		    	context.OnRemove();
+		    }
+		    return this;
 		}
 
 		/// Retrieve a component from this Context by generic type
@@ -150,7 +168,6 @@ namespace strange.extensions.context.impl
 		{
 			//Override in subclasses
 		}
-
 	}
 }
 

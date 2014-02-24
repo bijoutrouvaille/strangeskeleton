@@ -29,7 +29,7 @@ namespace strange.framework.impl
 {
 	public class SemiBinding : ISemiBinding
 	{
-		private object[] objectValue;
+		protected object[] objectValue;
 
 		public Enum constraint{ get; set;}
 		public bool uniqueValues{ get; set;}
@@ -40,7 +40,9 @@ namespace strange.framework.impl
 			uniqueValues = true;
 		}
 
-		public ISemiBinding Add(object o)
+		#region IManagedList implementation
+
+		public IManagedList Add(object o)
 		{
 			if (objectValue == null || (BindingConstraintType)constraint == BindingConstraintType.ONE)
 			{
@@ -71,7 +73,15 @@ namespace strange.framework.impl
 			return this;
 		}
 
-		public ISemiBinding Remove(object o)
+		public IManagedList Add(object[] list)
+		{
+			foreach (object item in list)
+				Add (item);
+
+			return this;
+		}
+
+		public IManagedList Remove(object o)
 		{
 			if (o.Equals(objectValue) || objectValue == null)
 			{
@@ -91,6 +101,27 @@ namespace strange.framework.impl
 			return this;
 		}
 
+		public IManagedList Remove(object[] list)
+		{
+			foreach (object item in list)
+				Remove (item);
+
+			return this;
+		}
+		virtual public object value
+		{ 
+			get
+			{
+				if (constraint.Equals(BindingConstraintType.ONE))
+				{
+					return (objectValue == null) ? null : objectValue [0];
+				}
+				return objectValue;
+			}
+		}
+
+		#endregion
+
 		/// Remove the value at index splicePos
 		protected void spliceValueAt(int splicePos)
 		{
@@ -107,18 +138,6 @@ namespace strange.framework.impl
 				newList [a + mod] = objectValue [a];
 			}
 			objectValue = (newList.Length == 0) ? null : newList;
-		}
-
-		virtual public object value
-		{ 
-			get
-			{
-				if ((BindingConstraintType)constraint == BindingConstraintType.ONE)
-				{
-					return (objectValue == null) ? null : objectValue [0];
-				}
-				return objectValue;
-			}
 		}
 	}
 }

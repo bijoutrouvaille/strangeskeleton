@@ -53,7 +53,7 @@ namespace strange.extensions.sequencer.impl
 
 		new public void Release ()
 		{
-			_retain = false;
+			retain = false;
 			if (sequencer != null)
 			{
 				sequencer.ReleaseCommand (this);

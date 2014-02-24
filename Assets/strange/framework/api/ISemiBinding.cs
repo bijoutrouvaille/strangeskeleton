@@ -41,22 +41,13 @@ using System;
 
 namespace strange.framework.api
 {
-	public interface ISemiBinding
+	public interface ISemiBinding : IManagedList
 	{
 		/// Set or get the constraint. 
 		Enum constraint{ get; set;}
 
-		/// A secondary constraint that ensures that this SemiBinding will never multiple values equivalent to each other. 
+		/// A secondary constraint that ensures that this SemiBinding will never contain multiple values equivalent to each other. 
 		bool uniqueValues{get;set;}
-
-		/// Retrieve the value of this SemiBinding. If the constraint is MANY, the value will be an Array.
-		object value{ get; }
-
-		/// Add a value to this SemiBinding. 
-		ISemiBinding Add(object o);
-
-		/// Remove a value from this SemiBinding. 
-		ISemiBinding Remove(object o);
 	}
 }
 

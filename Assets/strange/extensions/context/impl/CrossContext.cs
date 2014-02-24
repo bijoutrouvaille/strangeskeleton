@@ -24,7 +24,6 @@
  * - Methods (the ICrossContextCapable API) for adding and removing the hooks between Contexts.
  */
 
-using strange.extensions.context.impl;
 using strange.extensions.dispatcher.eventdispatcher.api;
 using strange.extensions.dispatcher.eventdispatcher.impl;
 using strange.extensions.context.api;
@@ -43,18 +42,8 @@ namespace strange.extensions.context.impl
 		/// A Binder that handles dependency injection binding and instantiation
 		public ICrossContextInjectionBinder injectionBinder
 		{
-			get
-			{
-				if (_injectionBinder == null)
-				{
-					_injectionBinder = new CrossContextInjectionBinder();
-				}
-				return _injectionBinder;
-			}
-			set
-			{
-				_injectionBinder = value;
-			}
+			get { return _injectionBinder ?? (_injectionBinder = new CrossContextInjectionBinder()); }
+		    set { _injectionBinder = value; }
 		}
 
 		/// A specific instance of EventDispatcher that communicates 
@@ -69,10 +58,19 @@ namespace strange.extensions.context.impl
 		/// dispatcher and you'll receive it.
 	    protected IEventDispatcher _crossContextDispatcher;
 
+        
 		public CrossContext() : base()
 		{}
 
-		public CrossContext(object view, bool autoStartup) : base(view, autoStartup)
+		public CrossContext(object view) : base(view)
+		{
+		}
+
+		public CrossContext(object view, ContextStartupFlags flags) : base(view, flags)
+		{
+		}
+
+		public CrossContext(object view, bool autoMapping) : base(view, autoMapping)
 		{
 		}
 
@@ -89,19 +87,23 @@ namespace strange.extensions.context.impl
 				injectionBinder.Bind<IEventDispatcher>().To<EventDispatcher>().ToSingleton().ToName(ContextKeys.CROSS_CONTEXT_DISPATCHER).CrossContext();
 				injectionBinder.Bind<CrossContextBridge> ().ToSingleton ().CrossContext();
 			}
+
 		}
 
 		protected override void instantiateCoreComponents()
 		{
 			base.instantiateCoreComponents();
 
-			IEventDispatcher dispatcher = injectionBinder.GetInstance<IEventDispatcher>(ContextKeys.CONTEXT_DISPATCHER) as IEventDispatcher;
+			IInjectionBinding dispatcherBinding = injectionBinder.GetBinding<IEventDispatcher> (ContextKeys.CONTEXT_DISPATCHER);
 
-			if (dispatcher != null)
-			{
-				crossContextDispatcher = injectionBinder.GetInstance<IEventDispatcher>(ContextKeys.CROSS_CONTEXT_DISPATCHER) as IEventDispatcher;
-				(crossContextDispatcher as ITriggerProvider).AddTriggerable(dispatcher as ITriggerable);
-				(dispatcher as ITriggerProvider).AddTriggerable(crossContextBridge as ITriggerable);
+			if (dispatcherBinding != null) {
+				IEventDispatcher dispatcher = injectionBinder.GetInstance<IEventDispatcher> (ContextKeys.CONTEXT_DISPATCHER) as IEventDispatcher;
+
+				if (dispatcher != null) {
+					crossContextDispatcher = injectionBinder.GetInstance<IEventDispatcher> (ContextKeys.CROSS_CONTEXT_DISPATCHER) as IEventDispatcher;
+					(crossContextDispatcher as ITriggerProvider).AddTriggerable (dispatcher as ITriggerable);
+					(dispatcher as ITriggerProvider).AddTriggerable (crossContextBridge as ITriggerable);
+				}
 			}
 		}
 

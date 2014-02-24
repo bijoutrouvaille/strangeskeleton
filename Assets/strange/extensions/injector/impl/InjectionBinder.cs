@@ -59,19 +59,23 @@ namespace strange.extensions.injector.impl
 			return instance;
 		}
 
-        protected virtual IInjector GetInjectorForBinding(IInjectionBinding binding)
-        {
-            return injector;
-        }
-
-		public object GetInstance<T>()
+		protected virtual IInjector GetInjectorForBinding(IInjectionBinding binding)
 		{
-			return GetInstance (typeof(T));
+			return injector;
 		}
 
-		public object GetInstance<T>(object name)
+		public T GetInstance<T>()
 		{
-			return GetInstance (typeof(T), name);
+			object instance = GetInstance (typeof (T));
+			T retv = (T) instance;
+			return retv;
+		}
+
+		public T GetInstance<T>(object name)
+		{
+			object instance = GetInstance (typeof (T), name);
+			T retv = (T) instance;
+			return retv;
 		}
 
 		override public IBinding GetRawBinding()
@@ -101,29 +105,31 @@ namespace strange.extensions.injector.impl
 			return base.Bind<T> () as IInjectionBinding;
 		}
 
-        public IInjectionBinding Bind(Type key)
-        {
-            return base.Bind(key) as IInjectionBinding;
-        }
+		public IInjectionBinding Bind(Type key)
+		{
+			return base.Bind(key) as IInjectionBinding;
+		}
 
 		new virtual public IInjectionBinding GetBinding<T>()
 		{
 			return base.GetBinding<T> () as IInjectionBinding;
 		}
 
-		new public IInjectionBinding GetBinding<T>(object name)
+		//SDM2014-0120: "virtual" added as dictated by changes to CrossContextInjectionBinder in relation to the cross-context implicit binding fix
+		new virtual public IInjectionBinding GetBinding<T>(object name)
 		{
 			return base.GetBinding<T> (name) as IInjectionBinding;
 		}
 
-		new public IInjectionBinding GetBinding(object key)
+		//SDM2014-0120: "virtual" added as dictated by changes to CrossContextInjectionBinder in relation to the cross-context implicit binding fix
+		new virtual public IInjectionBinding GetBinding(object key)
 		{
 			return base.GetBinding (key) as IInjectionBinding;
 		}
 
 		new virtual public IInjectionBinding GetBinding(object key, object name)
 		{
-            return base.GetBinding(key, name) as IInjectionBinding;
+			return base.GetBinding(key, name) as IInjectionBinding;
 		}
 
 		public int ReflectAll()
@@ -160,6 +166,6 @@ namespace strange.extensions.injector.impl
 			}
 			return count;
 		}
-    }
+	}
 }
 

@@ -57,6 +57,11 @@ namespace strange.extensions.injector.api
 		/// Request that the provided target be injected.
 		object Inject(object target, bool attemptConstructorInjection);
 
+		/// Clear the injections from the provided instance.
+		/// Note that Uninject can only clean public properties...therefore only
+		/// setters will be uninjected...not injections provided via constructor injection
+		void Uninject(object target);
+
 		/// Get/set an InjectorFactory.
 		IInjectorFactory factory{ get; set;}
 

@@ -25,7 +25,7 @@
  * 
  * The startup sequence looks like this:
 
-  		void Awake()
+		void Awake()
 		{
 			context = new MyContext(this, true);
 			context.Start ();
@@ -52,9 +52,19 @@ namespace strange.extensions.context.impl
 		/// </summary>
 		protected virtual void OnDestroy()
 		{
-			if (context != null)
+			if (context != null && Context.firstContext != null)
 				Context.firstContext.RemoveContext(context);
 		}
+
+		#region IView implementation
+
+		public bool requiresContext {get;set;}
+
+		public bool registeredWithContext {get;set;}
+
+		public bool autoRegisterWithContext{ get; set; }
+
+		#endregion
 	}
 }
 

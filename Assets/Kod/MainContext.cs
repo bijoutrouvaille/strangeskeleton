@@ -24,7 +24,8 @@ namespace sci
 //            implicitBinder.ScanForAnnotatedClasses(implicitInjectionNamespaces);
             mediationBinder.Bind<CubeSpinView>().To<CubeSpinMediator>();
             injectionBinder.Bind<StartSignal>().ToSingleton();
-            injectionBinder.Bind<ShpongleSignal>().ToSingleton().CrossContext();
+            if (injectionBinder.GetBinding<ShpongleSignal>()==null)
+                injectionBinder.Bind<ShpongleSignal>().ToSingleton().CrossContext();
 //            commandBinder.Bind<StartSignal>().To<StartCommand>();
 
 

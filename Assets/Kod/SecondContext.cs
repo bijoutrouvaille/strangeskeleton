@@ -21,7 +21,8 @@ namespace sci
         protected override void mapBindings()
         {
             injectionBinder.Bind<StartSignal>().ToSingleton();
-            injectionBinder.Bind<ShpongleSignal>().ToSingleton().CrossContext();
+            if (injectionBinder.GetBinding<ShpongleSignal>()==null)
+                injectionBinder.Bind<ShpongleSignal>().ToSingleton().CrossContext();
         }
         // Next two methods are mods to use various extensions, in particular:
         // Signals rather than Events
